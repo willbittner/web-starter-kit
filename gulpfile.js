@@ -43,11 +43,14 @@ var AUTOPREFIXER_BROWSERS = [
   'android >= 4.4',
   'bb >= 10'
 ];
-
+var outputFolder = "www";
 // Lint JavaScript
 gulp.task('jshint', function () {
   return gulp.src('app/scripts/**/*.js')
-    .pipe(reload({stream: true, once: true}))
+    .pipe(reload({
+      stream: true,
+      once: true
+    }))
     .pipe($.jshint())
     .pipe($.jshint.reporter('jshint-stylish'))
     .pipe($.if(!browserSync.active, $.jshint.reporter('fail')));
@@ -60,60 +63,77 @@ gulp.task('images', function () {
       progressive: true,
       interlaced: true
     })))
-    .pipe(gulp.dest('dist/images'))
-    .pipe($.size({title: 'images'}));
+    .pipe(gulp.dest(outputFolder + '/images'))
+    .pipe($.size({
+      title: 'images'
+    }));
 });
 
 // Copy all files at the root level (app)
 gulp.task('copy', function () {
   return gulp.src([
-    'app/*',
-    '!app/*.html',
-    'node_modules/apache-server-configs/dist/.htaccess'
-  ], {
-    dot: true
-  }).pipe(gulp.dest('dist'))
-    .pipe($.size({title: 'copy'}));
+      'app/*',
+      '!app/*.html',
+      'node_modules/apache-server-configs/dist/.htaccess'
+    ], {
+      dot: true
+    })
+    .pipe(gulp.dest(outputFolder + ''))
+    .pipe($.size({
+      title: 'copy'
+    }));
 });
 
 // Copy web fonts to dist
 gulp.task('fonts', function () {
   return gulp.src(['app/fonts/**'])
-    .pipe(gulp.dest('dist/fonts'))
-    .pipe($.size({title: 'fonts'}));
+    .pipe(gulp.dest(outputFolder + '/fonts'))
+    .pipe($.size({
+      title: 'fonts'
+    }));
 });
 
 // Compile and automatically prefix stylesheets
 gulp.task('styles', function () {
   // For best performance, don't add Sass partials to `gulp.src`
   return gulp.src([
-    'app/styles/*.scss',
-    'app/styles/**/*.css',
-    'app/styles/components/components.scss'
-  ])
+      'app/styles/*.scss',
+      'app/styles/**/*.css',
+      'app/styles/components/components.scss'
+    ])
     .pipe($.sourcemaps.init())
-    .pipe($.changed('.tmp/styles', {extension: '.css'}))
+    .pipe($.changed('.tmp/styles', {
+      extension: '.css'
+    }))
     .pipe($.sass({
       precision: 10,
       onError: console.error.bind(console, 'Sass error:')
     }))
-    .pipe($.autoprefixer({browsers: AUTOPREFIXER_BROWSERS}))
+    .pipe($.autoprefixer({
+      browsers: AUTOPREFIXER_BROWSERS
+    }))
     .pipe($.sourcemaps.write())
     .pipe(gulp.dest('.tmp/styles'))
     // Concatenate and minify styles
     .pipe($.if('*.css', $.csso()))
-    .pipe(gulp.dest('dist/styles'))
-    .pipe($.size({title: 'styles'}));
+    .pipe(gulp.dest(outputFolder + '/styles'))
+    .pipe($.size({
+      title: 'styles'
+    }));
 });
 
 // Scan your HTML for assets & optimize them
 gulp.task('html', function () {
-  var assets = $.useref.assets({searchPath: '{.tmp,app}'});
+  var assets = $.useref.assets({
+    searchPath: '{.tmp,app}'
+  });
 
   return gulp.src('app/**/*.html')
     .pipe(assets)
     // Concatenate and minify JavaScript
-    .pipe($.if('*.js', $.uglify({preserveComments: 'some'})))
+    .pipe($.if('*.js', $.uglify({
+      preserveComments: 'some'
+    })))
     // Remove any unused CSS
     // Note: if not using the Style Guide, you can delete it from
     //       the next line to only include styles your project uses.
@@ -138,12 +158,16 @@ gulp.task('html', function () {
     // Minify any HTML
     .pipe($.if('*.html', $.minifyHtml()))
     // Output files
-    .pipe(gulp.dest('dist'))
-    .pipe($.size({title: 'html'}));
+    .pipe(gulp.dest(outputFolder + ''))
+    .pipe($.size({
+      title: 'html'
+    }));
 });
 
 // Clean output directory
-gulp.task('clean', del.bind(null, ['.tmp', 'dist/*', '!dist/.git'], {dot: true}));
+gulp.task('clean', del.bind(null, ['.tmp', outputFolder + '/*', '!dist/.git'], {
+  dot: true
+}));
 
 // Watch files for changes & reload
 gulp.task('serve', ['styles'], function () {
@@ -173,15 +197,14 @@ gulp.task('serve:dist', ['default'], function () {
     // Note: this uses an unsigned certificate which on first access
     //       will present a certificate warning in the browser.
     // https: true,
-    server: 'dist'
+    server: outputFolder + ''
   });
 });
 
 // Build production files, the default task
-gulp.task('default', ['clean'], function(cb) {
+gulp.task('default', ['clean'], function (cb) {
   runSequence(
-    'styles',
-    ['jshint', 'html', 'images', 'fonts', 'copy'],
+    'styles', ['jshint', 'html', 'images', 'fonts', 'copy'],
     'generate-service-worker',
     cb);
 });
@@ -201,10 +224,10 @@ gulp.task('pagespeed', function (cb) {
 // See http://www.html5rocks.com/en/tutorials/service-worker/introduction/ for
 // an in-depth explanation of what service workers are and why you should care.
 // Generate a service worker file that will provide offline functionality for
-// local resources. This should only be done for the 'dist' directory, to allow
+// local resources. This should only be done for the outputFolder+'' directory, to allow
 // live reload to work as expected when serving from the 'app' directory.
-gulp.task('generate-service-worker', function(callback) {
-  var rootDir = 'dist';
+gulp.task('generate-service-worker', function (callback) {
+  var rootDir = outputFolder + '';
 
   swPrecache({
     // Used to avoid cache conflicts when serving on localhost.
@@ -215,7 +238,7 @@ gulp.task('generate-service-worker', function(callback) {
     // Generally, URLs that depend on multiple files (such as layout templates)
     // should list all the files; a change in any will invalidate the cache.
     // In this case, './' is the top-level relative URL, and its response
-    // depends on the contents of the file 'dist/index.html'.
+    // depends on the contents of the file outputFolder+'/index.html'.
     dynamicUrlToDependencies: {
       './': [path.join(rootDir, 'index.html')]
     },
@@ -229,17 +252,18 @@ gulp.task('generate-service-worker', function(callback) {
     ],
     // Translates a static file path to the relative URL that it's served from.
     stripPrefix: path.join(rootDir, path.sep)
-  }, function(error, serviceWorkerFileContents) {
+  }, function (error, serviceWorkerFileContents) {
     if (error) {
       return callback(error);
     }
     fs.writeFile(path.join(rootDir, 'service-worker.js'),
-      serviceWorkerFileContents, function(error) {
-      if (error) {
-        return callback(error);
-      }
-      callback();
-    });
+      serviceWorkerFileContents,
+      function (error) {
+        if (error) {
+          return callback(error);
+        }
+        callback();
+      });
   });
 });
 
